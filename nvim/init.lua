@@ -34,7 +34,7 @@ end
 
 if not vim.uv.fs_stat(lazypath .. "/lua/lazy/init.lua") then
   error(
-    "lazy.nvim is not installed. Run ./setup_nvim.sh from the vim-config repository "
+    "lazy.nvim is not installed. Run ./setup_nvim.sh from the nvim-config repository "
       .. "to install the locked plugin versions."
   )
 end
@@ -42,7 +42,7 @@ end
 local current_lazy_commit = vim.fn.system({ "git", "-C", lazypath, "rev-parse", "--verify", "HEAD" })
 if vim.v.shell_error ~= 0 or vim.trim(current_lazy_commit) ~= lazy_commit then
   error(
-    ("lazy.nvim is not at locked commit %s. Run ./setup_nvim.sh from the vim-config repository."):format(
+    ("lazy.nvim is not at locked commit %s. Run ./setup_nvim.sh from the nvim-config repository."):format(
       lazy_commit
     )
   )

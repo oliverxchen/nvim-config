@@ -19,8 +19,8 @@ Neovim's 0.12-compatible `nvim-treesitter` main branch; setup installs the
 required Tree-sitter CLI automatically.
 
 ```bash
-git clone https://github.com/oliverxchen/vim-config.git ~/vim-config
-cd ~/vim-config
+git clone https://github.com/oliverxchen/nvim-config.git ~/nvim-config
+cd ~/nvim-config
 ./setup_nvim.sh
 ```
 

@@ -288,7 +288,7 @@ The config should not assume Homebrew paths or macOS commands.
 Suggested repository layout:
 
 ```text
-vim-config/
+nvim-config/
 ├── README.md
 ├── neovim-migration.md
 ├── nvim/

@@ -191,8 +191,8 @@ nvim_version() {
 
 update_shell_profile() {
 	local profile="$1"
-	local marker="# >>> vim-config additions >>>"
-	local end_marker="# <<< vim-config additions <<<"
+	local marker="# >>> nvim-config additions >>>"
+	local end_marker="# <<< nvim-config additions <<<"
 	local path_line="export PATH=\"$BIN_DIR:$NPM_PREFIX/bin:$GO_BIN_DIR:\$PATH\""
 	local temp
 
@@ -202,14 +202,10 @@ update_shell_profile() {
 	# by older versions, while preserving an incomplete block after interruption.
 	awk '
 		function is_start(line) {
-			return line == "# >>> vim-config nvim paths >>>" ||
-				line == "# >>> vim-config node path >>>" ||
-				line == "# >>> vim-config additions >>>"
+			return line ~ /^# >>> [^ ]+ (nvim paths|node path|additions) >>>$/
 		}
 		function is_end(line) {
-			return line == "# <<< vim-config nvim paths <<<" ||
-				line == "# <<< vim-config node path <<<" ||
-				line == "# <<< vim-config additions <<<"
+			return line ~ /^# <<< [^ ]+ (nvim paths|node path|additions) <<<$/
 		}
 		{
 			if (!in_block) {
