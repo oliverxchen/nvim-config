@@ -534,7 +534,7 @@ ensure_corepack() {
 }
 
 go_is_pinned() {
-	[[ "$(go version 2>/dev/null || true)" == "go${GO_VERSION} "* ]]
+	[[ "$(go version 2>/dev/null || true)" == "go version go${GO_VERSION} "* ]]
 }
 
 prefer_local_go() {

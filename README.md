@@ -18,6 +18,11 @@ they continue to point at the pinned Node.js installation. Treesitter uses
 Neovim's 0.12-compatible `nvim-treesitter` main branch; setup installs the
 required Tree-sitter CLI automatically.
 
+Go is installed under `${XDG_DATA_HOME:-$HOME/.local/share}/go-1.27.1`.
+Setup reuses that installation on subsequent runs and updates your shell's PATH
+to prefer it. An older system Go can remain installed; open a new shell after
+setup completes to use the pinned version.
+
 ```bash
 git clone https://github.com/oliverxchen/nvim-config.git ~/nvim-config
 cd ~/nvim-config
