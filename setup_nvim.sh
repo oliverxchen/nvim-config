@@ -596,11 +596,11 @@ install_node_tools() {
 	npm config set prefix "$NPM_PREFIX"
 	log "Installing JavaScript and TypeScript tools with npm ($(node --version), npm $(npm --version))"
 	# typescript-language-server uses the JavaScript tsserver, which TypeScript 7 no longer ships.
-	# Markdown uses this user-local Prettier only when a repository-local copy is absent.
+	# Use the npm package for all formats, including Markdown; project-local copies take precedence.
 	npm install --global --prefer-offline \
 		eslint \
 		eslint_d \
-		prettier \
+		oxfmt \
 		typescript@^6.0.0 \
 		typescript-language-server
 

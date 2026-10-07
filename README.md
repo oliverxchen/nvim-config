@@ -64,9 +64,9 @@ setup again.
   cycle through changed files.
 - The TypeScript language server, `ty`, `gopls`, and Taplo provide language
   intelligence when their tools apply.
-- Conform formats supported files on save when the appropriate project-local
-  formatter is available. Ruff, ESLint, and other linters report diagnostics
-  separately.
+- Conform formats supported files on save when the appropriate formatter is
+  available (project-local first, with a user-local Oxfmt fallback). Ruff, ESLint,
+  and other linters report diagnostics separately.
 - Swap files and persistent undo are enabled for recovery.
 
 For troubleshooting, use `:checkhealth`, `:checkhealth vim.lsp`,
@@ -75,31 +75,38 @@ Neovim 0.12.0 or newer.
 
 ## Project-local formatters and Python tools
 
-Ruff and ty are not installed globally by the setup script. Prettier is
-installed in the user-local Node.js tool directory as a fallback for Markdown,
-while repository-local versions take precedence:
+Ruff and ty are not installed globally by the setup script. Oxfmt is installed
+in the user-local Node.js tool directory as a fallback, while repository-local
+versions take precedence:
 
-- For Markdown, Prettier is resolved from the nearest
-  `node_modules/.bin/prettier` between the current file and the repository
-  root, then from the user-local global Prettier installation.
-- Other Prettier-supported filetypes require the nearest repository-local
-  `node_modules/.bin/prettier`.
+- JavaScript, JSX, TypeScript, TSX, JSON, JSONC, YAML, and Markdown are formatted
+  with Oxfmt on save. It is resolved from the nearest `node_modules/.bin/oxfmt`
+  between the current file and the repository root, then from the user-local
+  global Oxfmt installation. A project-local installation is optional.
 - Ruff and ty are resolved from the active `$VIRTUAL_ENV`, or from a `.venv`,
   `venv`, or `env` directory in the current repository.
 - Repository detection follows the current file; for an unnamed buffer it uses
   Neovim's current working directory, so starting Neovim from a repository also
   works.
 - Autoformatting and repository linters are disabled when the current file is
-  outside a Git repository. Markdown can use the global fallback inside a
-  repository; other Prettier-supported filetypes still need a project-local
-  formatter.
+  outside a Git repository. The existing global and buffer-local
+  `disable_autoformat` switches are respected.
+
+Oxfmt uses the nearest `.oxfmtrc.json`, `.oxfmtrc.jsonc`, `oxfmt.config.ts`, or
+`oxfmt.config.mts`. Without one, `nvim/oxfmt.json` preserves this editor's
+80-column and `proseWrap: "always"` defaults. Project Oxfmt configuration takes
+precedence over that fallback. Prettier configuration is not read automatically;
+run `pnpm exec oxfmt --migrate prettier` in a project to migrate it, and review
+the generated configuration. Oxfmt runs from the repository root for consistent
+project-relative ignore-file lookup.
 
 For example, install the tools in the project rather than globally:
 
 ```bash
 # JavaScript/TypeScript/JSON/YAML/Markdown projects
-pnpm add --save-dev prettier
-# or: npm install --save-dev prettier
+# Optional: pin Oxfmt per project
+pnpm add --save-dev oxfmt
+# or: npm install --save-dev oxfmt
 
 # Python projects using uv
 uv add --dev ruff ty
@@ -108,23 +115,25 @@ uv run ty --version
 ```
 
 The setup still installs `uv` itself as an environment manager, and keeps
-ESLint, `eslint_d`, Prettier, TypeScript, and `typescript-language-server` in
+ESLint, `eslint_d`, Oxfmt, TypeScript, and `typescript-language-server` in
 the user-local Node.js tool directory. Use `:ConformInfo` to see which
-formatter was selected for the current buffer.
+formatter was selected for the current buffer. Rerun `./setup_nvim.sh` after
+pulling this change to install Oxfmt. The setup uses the npm package rather than
+the standalone binary so all configured formats are supported.
 
 ## Supported tools and behavior
 
 - Python: project-environment `ty` for type checking and LSP features; project-
   environment Ruff for diagnostics and formatting; four-space indentation.
-- JavaScript and TypeScript: `ts_ls`, ESLint, and project-local Prettier;
-  Markdown also has a user-local global fallback; two-space indentation. The
-  setup uses TypeScript 6 because `typescript-language-server` needs
+- JavaScript and TypeScript (including JSX/TSX): `ts_ls`, ESLint, and Oxfmt
+  formatting on save with a user-local global fallback; two-space indentation.
+  The setup uses TypeScript 6 because `typescript-language-server` needs
   `tsserver.js`.
 - Go: pinned `gopls` `v0.23.0` and pinned Go `1.27.1`'s `gofmt`; tabs with a
   width of two.
 - TOML: Treesitter highlighting and Taplo for validation, completion, and
   formatting, with two-space indentation for nested tables and entries.
-- JSON, YAML, and Markdown: Treesitter and Prettier. Terraform uses
+- JSON/JSONC, YAML, and Markdown: Treesitter and Oxfmt. Terraform uses
   `terraform fmt` when Terraform is installed. SQL has highlighting only. CSV
   uses `csv.vim`.
 - Git commit buffers: spell checking and two-space indentation.
@@ -142,6 +151,22 @@ removed.
 
 ## Verification
 
+Run the formatter-selection contract tests from the repository root with Lua
+5.1+ (or Neovim, without loading the personal configuration):
+
+```bash
+lua tests/formatting.lua
+# or: nvim --headless -u NONE -l tests/formatting.lua
+bash -n setup_nvim.sh
+```
+
+These tests check filetype selection, local/global tool precedence, configuration
+fallback, and save guards; they do not run the Oxfmt engine. After setup, save
+unformatted `.js`, `.jsx`, `.ts`, `.tsx`, `.json`, `.jsonc`, `.yaml`, and `.md`
+files in a temporary Git repository with no project-local Oxfmt. Confirm
+`:ConformInfo` selects the user-local Oxfmt and saving formats the buffer. Repeat
+with a project-local Oxfmt and an Oxfmt config to verify they take precedence.
+
 Run setup twice on both macOS and Ubuntu:
 
 ```bash
@@ -158,6 +183,7 @@ node --version # v24.20.0
 go version # go1.27.1
 tsc --version
 typescript-language-server --version
+oxfmt --version
 gopls version
 corepack --version
 tree-sitter --version
