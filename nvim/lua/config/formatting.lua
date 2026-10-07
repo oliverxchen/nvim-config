@@ -16,41 +16,41 @@ local function project_formatter(name, resolver)
   }
 end
 
-local function prettier_command(bufnr)
-  local command = project_tools.node_tool("prettier", bufnr)
+local function oxfmt_command(bufnr)
+  local command = project_tools.node_tool("oxfmt", bufnr)
   if command then
     return command
   end
 
-  if vim.bo[bufnr].filetype == "markdown" and project_tools.repository_root(bufnr) then
-    command = vim.fn.exepath("prettier")
+  if project_tools.repository_root(bufnr) then
+    command = vim.fn.exepath("oxfmt")
     if command ~= "" then
       return command
     end
   end
 end
 
-local function prettier_formatter_command(_, bufnr)
-  return prettier_command(bufnr)
+local function oxfmt_formatter_command(_, bufnr)
+  return oxfmt_command(bufnr)
 end
 
 conform.setup({
   formatters_by_ft = {
     go = { "gofmt" },
     javascript = function(bufnr)
-      return project_tools.node_tool("prettier", bufnr) and { "prettier" } or {}
+      return oxfmt_command(bufnr) and { "oxfmt" } or {}
     end,
     javascriptreact = function(bufnr)
-      return project_tools.node_tool("prettier", bufnr) and { "prettier" } or {}
+      return oxfmt_command(bufnr) and { "oxfmt" } or {}
     end,
     json = function(bufnr)
-      return project_tools.node_tool("prettier", bufnr) and { "prettier" } or {}
+      return oxfmt_command(bufnr) and { "oxfmt" } or {}
     end,
     jsonc = function(bufnr)
-      return project_tools.node_tool("prettier", bufnr) and { "prettier" } or {}
+      return oxfmt_command(bufnr) and { "oxfmt" } or {}
     end,
     markdown = function(bufnr)
-      return prettier_command(bufnr) and { "prettier" } or {}
+      return oxfmt_command(bufnr) and { "oxfmt" } or {}
     end,
     python = function(bufnr)
       return project_tools.python_tool("ruff", bufnr) and { "ruff_format" } or {}
@@ -59,25 +59,40 @@ conform.setup({
     terraform = { "terraform_fmt" },
     toml = { "taplo" },
     typescript = function(bufnr)
-      return project_tools.node_tool("prettier", bufnr) and { "prettier" } or {}
+      return oxfmt_command(bufnr) and { "oxfmt" } or {}
     end,
     typescriptreact = function(bufnr)
-      return project_tools.node_tool("prettier", bufnr) and { "prettier" } or {}
+      return oxfmt_command(bufnr) and { "oxfmt" } or {}
     end,
     yaml = function(bufnr)
-      return project_tools.node_tool("prettier", bufnr) and { "prettier" } or {}
+      return oxfmt_command(bufnr) and { "oxfmt" } or {}
     end,
   },
   formatters = {
-    prettier = vim.tbl_extend("force", project_formatter("prettier", prettier_formatter_command), {
-      prepend_args = {
-        "--print-width",
-        "80",
-        "--prose-wrap",
-        "always",
-        "--config-precedence",
-        "file-override",
-      },
+    oxfmt = vim.tbl_extend("force", project_formatter("oxfmt", oxfmt_formatter_command), {
+      -- Conform v9.1.0 predates its built-in Oxfmt formatter.
+      inherit = false,
+      stdin = true,
+      args = function(_, ctx)
+        local config = vim.fs.find({
+          ".oxfmtrc.json",
+          ".oxfmtrc.jsonc",
+          "oxfmt.config.ts",
+          "oxfmt.config.mts",
+        }, { path = ctx.dirname, upward = true, type = "file" })[1]
+
+        -- Resolve from the buffer, even when Neovim was opened elsewhere.
+        -- Only use editor defaults when no project Oxfmt config applies.
+        return {
+          "--stdin-filepath",
+          "$FILENAME",
+          "--config",
+          config or vim.fs.joinpath(vim.fn.stdpath("config"), "oxfmt.json"),
+        }
+      end,
+      cwd = function(_, ctx)
+        return project_tools.repository_root(ctx.buf)
+      end,
     }),
     ruff_format = vim.tbl_extend("force", project_formatter("ruff", project_tools.python_tool), {
       args = {
